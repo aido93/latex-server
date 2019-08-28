@@ -1,0 +1,16 @@
+version: "2.0"
+networks:
+  net:
+volumes:
+  uploads:
+services:
+  latex:
+    image: latex-server
+    build: .
+    container_name: latex-server
+    ports:
+      - 8082:8080
+    networks:
+      - net
+    volumes:
+      - uploads:/data
