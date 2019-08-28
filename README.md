@@ -1,6 +1,22 @@
 # How to run
+docker-compose.yml:
 ```
-docker-compose up --build
+version: "2.0"
+volumes:
+  uploads:
+services:
+  latex:
+    image: aido93/latex-server:latest
+    container_name: latex-server
+    ports:
+      - 8082:8080
+    volumes:
+      - uploads:/data
+```
+
+After that just
+```
+docker-compose up -d
 ```
 # How to check
 ```
