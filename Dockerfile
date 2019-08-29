@@ -8,6 +8,8 @@ FROM blang/latex:ubuntu
 LABEL maintainer="Igor Diakonov <aidos.tanatos@gmail.com>"
 COPY --from=builder /go/bin/latex-server /latex-server
 EXPOSE 8080
-ENV CALLBACK_URL=""
+ENV CALLBACK_URL="" \
+    DEBUG="false" \
+    LOGLEVEL="info"
 CMD ["/latex-server"]
 

@@ -1,7 +1,6 @@
 package main
 
 import "github.com/gin-gonic/gin"
-import "log"
 import "os"
 import "os/exec"
 import "net/http"
@@ -9,8 +8,12 @@ import "bytes"
 import "encoding/json"
 import "github.com/levigross/grequests"
 import "mime/multipart"
+import (
+  log "github.com/sirupsen/logrus"
+)
 
 var callbackUrl string
+var debug string
 
 func check(e error) {
     if e != nil {
@@ -36,7 +39,7 @@ func compile(c *gin.Context) {
     }
     dir   := "/data/"+token
     os.Mkdir(dir, 0777)
-    log.Println(dir+" created")
+    log.Info(dir+" created")
     mainFound := false
     for _, file := range files {
         if file.Filename == "main.tex" {
@@ -56,13 +59,13 @@ func compile(c *gin.Context) {
 		    for _, file := range formCp.File["upload[]"] {
 			    cCp.SaveUploadedFile(file, dir+"/"+file.Filename)
 		    }
-            _, err := exec.Command("bash","-c",cmd).Output()
+            out, err := exec.Command("bash","-c",cmd).Output()
             if err != nil {
                 value := gin.H{"error": "Compilation failed"}
                 jsonValue, _ := json.Marshal(value)
                 _, err := http.Post(callbackUrl, "application/json", bytes.NewBuffer(jsonValue))
                 if err != nil {
-                    log.Println("Compilation failed; Cannot send request: "+err.Error())
+                    log.Error("Compilation failed; Cannot send request: "+err.Error())
                 }
             } else {
                 f, err := grequests.FileUploadFromDisk(dir+"/main.pdf")
@@ -71,7 +74,7 @@ func compile(c *gin.Context) {
                     jsonValue, _ := json.Marshal(value)
                     _, err := http.Post(callbackUrl, "application/json", bytes.NewBuffer(jsonValue))
                     if err != nil {
-                        log.Println("Cannot upload file; Cannot send request: "+err.Error())
+                        log.Error("Cannot upload file; Cannot send request: "+err.Error())
                     }
                 }
                 defer f[0].FileContents.Close()
@@ -83,8 +86,11 @@ func compile(c *gin.Context) {
 		        }
                 _, err = grequests.Post(callbackUrl, ro)
                 if err != nil {
-                    log.Println("Cannot send file: "+err.Error())
+                    log.Error("Cannot send file: "+err.Error())
                 }
+            }
+            if debug == "true" {
+                log.Info(out)
             }
             os.RemoveAll(dir)
         }()
@@ -93,10 +99,13 @@ func compile(c *gin.Context) {
         for _, file := range files {
 			c.SaveUploadedFile(file, dir+"/"+file.Filename)
 		}
-        _, err := exec.Command("bash","-c",cmd).Output()
+        out, err := exec.Command("bash","-c",cmd).Output()
         if err != nil {
             c.AbortWithStatusJSON(400, gin.H{"error": "Compilation failed"})
             return
+        }
+        if debug == "true" {
+            log.Info(out)
         }
         c.File(dir+"/main.pdf")
         os.RemoveAll(dir)
@@ -108,7 +117,22 @@ func compile(c *gin.Context) {
 }
 
 func main() {
+    debug="true"
     callbackUrl = os.Getenv("CALLBACK_URL")
+    loglevel := os.Getenv("DEBUG")
+    if loglevel == "info" {
+        log.SetLevel(log.InfoLevel)
+    } else if loglevel == "warning" {
+        log.SetLevel(log.WarnLevel)
+    } else if loglevel == "error" {
+        log.SetLevel(log.ErrorLevel)
+    }
+    if callbackUrl != "" {
+        log.Info("Async mode. Return data to "+callbackUrl)
+    } else {
+        log.Info("Sync mode. Return data back to sender")
+    }
+    debug       = os.Getenv("DEBUG")
 	router := gin.Default()
     v1 := router.Group("/v1")
     {
