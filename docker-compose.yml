@@ -5,7 +5,7 @@ volumes:
   uploads:
 services:
   latex:
-    image: latex-server
+    image: aido93/latex-server
     build: .
     container_name: latex-server
     #environment:

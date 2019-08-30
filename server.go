@@ -65,22 +65,28 @@ func compile(c *gin.Context) {
 		    for _, file := range formCp.File["upload[]"] {
 			    cCp.SaveUploadedFile(file, dir+"/"+file.Filename)
 		    }
-            out, err := exec.Command("bash","-c",cmd).Output()
+            _, err := exec.Command("bash","-c",cmd).Output()
             if err != nil {
                 value := gin.H{"error": "Compilation failed"}
                 jsonValue, _ := json.Marshal(value)
-                _, err := http.Post(callbackUrl+"/"+uri, "application/json", bytes.NewBuffer(jsonValue))
+                output, err := http.Post(callbackUrl+"/"+uri, "application/json", bytes.NewBuffer(jsonValue))
                 if err != nil {
                     log.Error("Compilation failed; Cannot send request: "+err.Error())
+                }
+                if debug == "true" {
+                    log.Info(output)
                 }
             } else {
                 f, err := grequests.FileUploadFromDisk(dir+"/main.pdf")
                 if err != nil {
                     value := gin.H{"error": "Cannot upload file", "reason": err.Error()}
                     jsonValue, _ := json.Marshal(value)
-                    _, err := http.Post(callbackUrl+"/"+uri, "application/json", bytes.NewBuffer(jsonValue))
+                    output, err := http.Post(callbackUrl+"/"+uri, "application/json", bytes.NewBuffer(jsonValue))
                     if err != nil {
                         log.Error("Cannot upload file; Cannot send request: "+err.Error())
+                    }
+                    if debug == "true" {
+                        log.Info(output)
                     }
                 }
                 defer f[0].FileContents.Close()
@@ -90,13 +96,13 @@ func compile(c *gin.Context) {
 			        Files: f,
 			        Data:  map[string]string{"token": token},
 		        }
-                _, err = grequests.Post(callbackUrl+"/"+uri, ro)
+                output, err := grequests.Post(callbackUrl+"/"+uri, ro)
                 if err != nil {
                     log.Error("Cannot send file: "+err.Error())
                 }
-            }
-            if debug == "true" {
-                log.Info(out)
+                if debug == "true" {
+                    log.Info(output)
+                }
             }
             os.RemoveAll(dir)
         }()
@@ -105,13 +111,10 @@ func compile(c *gin.Context) {
         for _, file := range files {
 			c.SaveUploadedFile(file, dir+"/"+file.Filename)
 		}
-        out, err := exec.Command("bash","-c",cmd).Output()
+        _, err := exec.Command("bash","-c",cmd).Output()
         if err != nil {
             c.AbortWithStatusJSON(400, gin.H{"error": "Compilation failed"})
             return
-        }
-        if debug == "true" {
-            log.Info(out)
         }
         c.File(dir+"/main.pdf")
         os.RemoveAll(dir)
