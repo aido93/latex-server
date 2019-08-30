@@ -26,13 +26,13 @@ func compile(c *gin.Context) {
     var token string
     var files []*multipart.FileHeader
     if val, ok := form.File["upload[]"]; !ok {
-        c.AbortWithStatusJSON(400, gin.H{"error": "form does not contain files in upload[]`"})
+        c.AbortWithStatusJSON(400, gin.H{"error": "form does not contain files in upload[]"})
         return
     } else {
         files = val
     }
     if tokens, ok := form.Value["token"]; !ok {
-        c.AbortWithStatusJSON(400, gin.H{"error": "form does not contain token`"})
+        c.AbortWithStatusJSON(400, gin.H{"error": "form does not contain token"})
         return
     } else {
         token = tokens[0]
@@ -53,6 +53,12 @@ func compile(c *gin.Context) {
     }
     cmd := "cd "+dir+" && pdflatex -interaction=nonstopmode main.tex && cd /"
     if callbackUrl!="" {
+        uris, ok := form.Value["uri"];
+        if !ok {
+            c.AbortWithStatusJSON(400, gin.H{"error": "form does not contain callback uri"})
+            return
+        }
+        uri := uris[0]
         cCp := c.Copy()
         go func() {
             formCp, _ := cCp.MultipartForm()
@@ -63,7 +69,7 @@ func compile(c *gin.Context) {
             if err != nil {
                 value := gin.H{"error": "Compilation failed"}
                 jsonValue, _ := json.Marshal(value)
-                _, err := http.Post(callbackUrl, "application/json", bytes.NewBuffer(jsonValue))
+                _, err := http.Post(callbackUrl+"/"+uri, "application/json", bytes.NewBuffer(jsonValue))
                 if err != nil {
                     log.Error("Compilation failed; Cannot send request: "+err.Error())
                 }
@@ -72,7 +78,7 @@ func compile(c *gin.Context) {
                 if err != nil {
                     value := gin.H{"error": "Cannot upload file", "reason": err.Error()}
                     jsonValue, _ := json.Marshal(value)
-                    _, err := http.Post(callbackUrl, "application/json", bytes.NewBuffer(jsonValue))
+                    _, err := http.Post(callbackUrl+"/"+uri, "application/json", bytes.NewBuffer(jsonValue))
                     if err != nil {
                         log.Error("Cannot upload file; Cannot send request: "+err.Error())
                     }
@@ -84,7 +90,7 @@ func compile(c *gin.Context) {
 			        Files: f,
 			        Data:  map[string]string{"token": token},
 		        }
-                _, err = grequests.Post(callbackUrl, ro)
+                _, err = grequests.Post(callbackUrl+"/"+uri, ro)
                 if err != nil {
                     log.Error("Cannot send file: "+err.Error())
                 }
