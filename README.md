@@ -58,6 +58,7 @@ with open('templates/main.tex') as f:
 source=template.render(name='John')
 # upload-pdf/ - is your view uri. The place in your code that works with uploading files
 # You can use more than one uri for receiving answer (for instance, for diffrent situations).
+# files MUST contain "upload[]" field that MUST contain at least 'main.tex' file
 p=requests.post(pdf_compiler_url, files={"upload[]": ('main.tex', source.encode())}, data={"token": token, "uri": "upload-pdf/"})
 print(p.content)
 ```

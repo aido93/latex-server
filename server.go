@@ -120,7 +120,7 @@ func compile(c *gin.Context) {
         os.RemoveAll(dir)
         c.Header("Content-Description", "File Transfer")
         c.Header("Content-Transfer-Encoding", "binary")
-        c.Header("Content-Disposition", "attachment; filename=businessPlan.pdf")
+        c.Header("Content-Disposition", "attachment; filename=main.pdf")
         c.Header("Content-Type", "application/pdf")
     }
 }
