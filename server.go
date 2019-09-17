@@ -76,6 +76,7 @@ func compile(c *gin.Context) {
                 if debug == "true" {
                     log.Info(output)
                 }
+		defer output.Body.Close()
             } else {
                 f, err := grequests.FileUploadFromDisk(dir+"/main.pdf")
                 if err != nil {
@@ -88,6 +89,7 @@ func compile(c *gin.Context) {
                     if debug == "true" {
                         log.Info(output)
                     }
+		    defer output.Body.Close()
                 }
                 defer f[0].FileContents.Close()
                 f[0].FileMime  = "application/pdf"
@@ -103,6 +105,7 @@ func compile(c *gin.Context) {
                 if debug == "true" {
                     log.Info(output)
                 }
+		defer output.Body.Close()
             }
             os.RemoveAll(dir)
         }()
