@@ -105,7 +105,6 @@ func compile(c *gin.Context) {
                 if debug == "true" {
                     log.Info(output)
                 }
-		defer output.Body.Close()
             }
             os.RemoveAll(dir)
         }()
