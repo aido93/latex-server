@@ -1,5 +1,5 @@
 FROM golang:1.11 AS builder
-WORKDIR $GOPATH/src/gitlab.com/aido93/latex-server
+WORKDIR $GOPATH/src/github.com/aido93/latex-server
 COPY . .
 RUN mkdir /uploads && go get -d -v ./...
 RUN go install -v ./... && which latex-server
